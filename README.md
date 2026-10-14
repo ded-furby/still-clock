@@ -31,6 +31,10 @@ Still has two native components:
 
 Use **Start system screen saver** with immediate password protection for the clock-while-away experience. **Control–Command–Q** first shows Apple’s lock UI; it is not a guaranteed direct shortcut into a third-party screen saver. Still’s full-screen **Preview** is only a preview and does not lock your Mac.
 
+## A simple native control room
+
+![Still Clock settings app](docs/app.png)
+
 ## A dial that feels considered
 
 - Eight palettes: Porcelain, Parchment, Sage, Glacier, Rose, Lavender, Cobalt, and Graphite.

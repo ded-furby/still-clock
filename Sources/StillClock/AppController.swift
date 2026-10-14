@@ -107,6 +107,7 @@ import ClockCore
     }
 
     @objc func showSettings() {
+        store.reload()
         if settingsWindow == nil {
             let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1120, height: 760),
                                   styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView], backing: .buffered, defer: false)

@@ -9,6 +9,8 @@ import ScreenSaver
     @Published public private(set) var syncMessage = ""
     private let defaults: UserDefaults
     private let sharedURL: URL?
+    private var observer: NSObjectProtocol?
+    private static let changeNotification = Notification.Name("com.dedfurby.StillClock.visualSettingsChanged")
     public init(defaults: UserDefaults? = nil, sharedSettingsURL: URL? = nil) {
         self.defaults = defaults ?? ScreenSaverDefaults(forModuleWithName: Self.domain) ?? .standard
         // Modern macOS isolates the screen saver host's defaults from the companion app.
@@ -21,7 +23,14 @@ import ScreenSaver
             settings = decoded
         } else { settings = ClockSettings() }
         if sharedURL != nil { save() }
+        if defaults == nil {
+            observer = DistributedNotificationCenter.default().addObserver(forName: Self.changeNotification,
+                                                                           object: nil, queue: .main) { [weak self] _ in
+                Task { @MainActor in self?.reload() }
+            }
+        }
     }
+    deinit { if let observer { DistributedNotificationCenter.default().removeObserver(observer) } }
     public func reload() {
         defaults.synchronize()
         let sharedData = sharedURL.flatMap { try? Data(contentsOf: $0) }
@@ -52,6 +61,8 @@ import ScreenSaver
                     }
                     try data.write(to: sharedURL, options: .atomic)
                     syncMessage = ""
+                    DistributedNotificationCenter.default().postNotificationName(Self.changeNotification,
+                        object: nil, userInfo: nil, deliverImmediately: true)
                 } catch {
                     syncMessage = "Desktop settings saved locally. Shared screen saver preferences could not be written: \(error.localizedDescription)"
                 }
