@@ -1,0 +1,27 @@
+name: macOS build and checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build universal app and screen saver
+        run: make universal
+      - name: Validate clock and load native screen saver
+        run: make test
+      - name: XCTest regressions
+        run: swift test
+      - name: Package
+        run: ./Scripts/package.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StillClock-universal
+          path: dist/*
+          retention-days: 14
