@@ -15,6 +15,7 @@ Recorded 15 October 2026. Runtime checks used an Apple Silicon iMac on macOS 27.
 - The actual system screen saver was started from the installed app. The user confirmed that the moving clock appeared on both the iMac and Lenovo displays.
 - After correcting the desktop window level and hiding behavior, the user separately confirmed the live wallpaper was visible on both desktops with the screen saver off.
 - The right-aligned companion composition was rendered and visually inspected at 1920 × 1080.
+- In the installed 1.0.1 app, the Lenovo setting was changed to **Right clock · Flow** and read back; the built-in display remained **Centered clock**.
 - Immediate password protection was verified in Lock Screen settings and with `sysadminctl -screenLock status` after the user authenticated the change directly in macOS.
 - Launch at login was enabled and read back as enabled in the installed app. A reboot was not performed.
 - The installed app and screen saver executables match the packaged build by SHA-256, and their ad-hoc signatures pass strict verification.
@@ -22,7 +23,7 @@ Recorded 15 October 2026. Runtime checks used an Apple Silicon iMac on macOS 27.
 
 ## CI
 
-The [1.0.0 GitHub Actions macOS build](https://github.com/ded-furby/still-clock/actions/runs/38652242065) passed universal compilation, the native checks and bundle smoke test, the XCTest suite, and DMG/ZIP packaging. See the repository's Actions tab for the commit-specific 1.0.1 result; the local checks above include its wallpaper and companion-layout changes.
+The [1.0.1 GitHub Actions macOS build](https://github.com/ded-furby/still-clock/actions/runs/38653299088) for code commit `be59644e92925141059abcae1636654879d063d2` passed universal compilation, the 1,512 native checks and bundle smoke test, the XCTest suite, and DMG/ZIP packaging. The release also includes the subsequent documentation update recording this result.
 
 ## Limits and remaining manual checks
 
