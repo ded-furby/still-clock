@@ -14,10 +14,12 @@ import SwiftUI
     private func refreshSettings() {
         SettingsStore.shared.reload()
         settings = SettingsStore.shared.settings
-        animationTimeInterval = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion || !settings.showSeconds ? 1 : settings.movement.frameInterval
+        let reduced = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        animationTimeInterval = reduced ? 1 : settings.layout(for: window?.screen) == .flowRight ? 1.0 / 30 : !settings.showSeconds ? 1 : settings.movement.frameInterval
         needsDisplay = true
     }
     public override func startAnimation() { refreshSettings(); super.startAnimation() }
+    public override func viewDidMoveToWindow() { super.viewDidMoveToWindow(); refreshSettings() }
     public override func stopAnimation() { super.stopAnimation() }
     public override func animateOneFrame() { needsDisplay = true }
     public override var isOpaque: Bool { true }
@@ -25,7 +27,9 @@ import SwiftUI
         guard let context = NSGraphicsContext.current?.cgContext else { return }
         let dark = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
         renderer.draw(in: context, size: bounds.size, settings: settings,
-                      backingScale: window?.backingScaleFactor ?? 2, systemDark: dark, allowDrift: !isPreview)
+                      backingScale: window?.backingScaleFactor ?? 2, systemDark: dark, allowDrift: !isPreview,
+                      layout: isPreview ? .centered : settings.layout(for: window?.screen),
+                      reducedMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)
     }
     public override var hasConfigureSheet: Bool { true }
     public override var configureSheet: NSWindow? {

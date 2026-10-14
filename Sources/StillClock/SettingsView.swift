@@ -25,7 +25,7 @@ struct SettingsView: View {
                         .buttonStyle(.bordered).controlSize(.large).help("Full-screen preview. Press any key to return.")
                 }.padding(.bottom, 26)
                 if page == 0 { appearancePage }
-                if page == 1 { setupPage }
+                if page == 1 { ScrollView { setupPage }.scrollIndicators(.hidden) }
                 if page == 2 { aboutPage }
                 Spacer(minLength: 12)
                 HStack {
@@ -144,9 +144,19 @@ struct SettingsView: View {
     private var setupPage: some View {
         VStack(alignment: .leading, spacing: 18) {
             setupCard("01", title: "A living desktop", subtitle: "The dial sits behind your icons on every connected display.") {
-                HStack(spacing: 18) {
-                    ForEach(controller.displayNames, id: \.self) { name in
-                        Label(name, systemImage: "display").font(.system(size: 11)).foregroundColor(ink)
+                ForEach(controller.displays) { display in
+                    HStack {
+                        Label(display.name, systemImage: "display").font(.system(size: 11)).foregroundColor(ink)
+                        Spacer()
+                        Picker("Layout for \(display.name)", selection: Binding(
+                            get: { store.settings.displayLayouts?[display.id] ?? .centered },
+                            set: { layout in
+                                var layouts = store.settings.displayLayouts ?? [:]
+                                layouts[display.id] = layout
+                                store.settings.displayLayouts = layouts
+                            })) {
+                                ForEach(DisplayLayout.allCases) { Text($0.title).tag($0) }
+                            }.labelsHidden().frame(width: 180)
                     }
                 }
                 Toggle("Live wallpaper", isOn: Binding(get: { controller.wallpaperEnabled }, set: controller.setWallpaper)).toggleStyle(.switch).tint(ink)

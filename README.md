@@ -10,7 +10,7 @@ Still brings a quiet, tactile clock to the places where you leave a little space
 
 ## Get started
 
-1. Download **StillClock-1.0.0-universal.dmg** from [Releases](https://github.com/ded-furby/still-clock/releases/latest).
+1. Download **StillClock-1.0.1-universal.dmg** from [Releases](https://github.com/ded-furby/still-clock/releases/latest).
 2. Drag **Still Clock.app** into **Applications**, then open it.
 3. Click **Use as wallpaper** for a live clock behind your desktop icons.
 4. Open **On your Mac → Install screen saver**. In macOS settings, choose **Still Clock**.
@@ -35,6 +35,12 @@ Use **Start system screen saver** with immediate password protection for the clo
 
 ![Still Clock settings app](docs/app.png)
 
+### A companion for your second display
+
+In **On your Mac**, choose **Right clock · Flow** for a display on your left. The dial sits near its right edge, with three quiet waves and a travelling bead of light pointing toward it. Your other screen can keep the centered dial. Layouts are saved independently for each display and used by the wallpaper and screen saver. Reduce Motion freezes the decorative animation.
+
+![Right-aligned companion clock with a flowing line](docs/previews/companion.png)
+
 ## A dial that feels considered
 
 - Eight palettes: Porcelain, Parchment, Sage, Glacier, Rose, Lavender, Cobalt, and Graphite.
@@ -45,7 +51,7 @@ Use **Start system screen saver** with immediate password protection for the clo
 - Gentle position drift in the wallpaper and screen saver. This reduces static exposure; it is not a guarantee against burn-in.
 - Multiple displays, Retina rendering, reduced-motion support, accessible controls, and a spoken time value for the preview.
 - A menu-bar companion, optional launch at login, and an in-app screen saver installer.
-- Cached dial artwork; only the moving hands are composed each frame. Desktop drawing pauses while displays sleep or the session is inactive, and skips fully occluded windows.
+- Cached dial artwork; the hands and optional companion animation are composed over it. Desktop drawing pauses while displays sleep or the session is inactive, and skips fully occluded windows.
 
 <table><tr><td><img src="docs/previews/sage.png" alt="Sage dial"></td><td><img src="docs/previews/night.png" alt="Night dial"></td></tr></table>
 

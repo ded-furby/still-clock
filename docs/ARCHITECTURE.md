@@ -20,7 +20,9 @@ Angles come from Gregorian calendar components in the selected time zone, includ
 
 ## Desktop windows
 
-One borderless, mouse-transparent window per display is placed one level above the desktop background and below desktop icons. Windows join desktop Spaces and rebuild after display configuration changes. The original wallpaper is never overwritten. This is not an overlay on the login window, and it does not attempt to bypass macOS’s secure UI.
+One borderless, mouse-transparent window per display is placed just below the desktop-icon level, above the system desktop picture. The windows cannot hide with the settings app. They join desktop Spaces, restore their order after wake/unlock/Space changes, and rebuild after display configuration changes. The original wallpaper is never overwritten. This is not an overlay on the login window, and it does not attempt to bypass macOS’s secure UI.
+
+Display layouts are keyed by Core Graphics display UUID, independent of monitor ordering. The optional `displayLayouts` field keeps 1.0.0 preference files compatible. `DialPlacement` keeps the right-aligned composition inside the display and falls back to centered on portrait screens. The companion flow is drawn in the shared renderer at 30 fps and freezes under Reduce Motion; the clock itself still advances.
 
 ## Packaging and trust
 

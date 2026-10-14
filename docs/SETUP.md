@@ -4,6 +4,8 @@
 
 Open Still Clock and click **Use as wallpaper**. The clock appears behind your icons on all connected displays. Click **Pause wallpaper** or quit Still to reveal your existing wallpaper immediately. Still does not change your saved desktop picture.
 
+In **On your Mac**, each connected display has a layout selector. Choose **Right clock · Flow** for a monitor to your left: the dial moves toward the adjoining edge, accompanied by a subtle animated line. Leave your primary screen on **Centered clock**. Preferences follow the display's stable identifier across reconnects; portrait displays use a centered dial so it remains legible. Layouts also apply to the system screen saver when its host exposes the display identity.
+
 The app remains in the menu bar after its window closes. Use **On your Mac → Open Still at login** if you want it to return after signing in. macOS may ask you to allow the login item. Launch-at-login is optional and off by default.
 
 ## Screen saver

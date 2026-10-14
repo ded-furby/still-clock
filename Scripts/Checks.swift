@@ -34,6 +34,23 @@ import AppKit
         check(s.isNight(systemDark: true) && !s.isNight(systemDark: false), "automatic light")
         let decoded = try JSONDecoder().decode(ClockSettings.self, from: JSONEncoder().encode(s))
         check(decoded == s, "settings round trip")
+        var legacy = try JSONSerialization.jsonObject(with: JSONEncoder().encode(s)) as! [String: Any]
+        legacy.removeValue(forKey: "displayLayouts")
+        let upgraded = try JSONDecoder().decode(ClockSettings.self, from: JSONSerialization.data(withJSONObject: legacy))
+        check(upgraded.dial == s.dial && upgraded.displayLayouts == nil, "1.0.0 settings preserve the dial when upgraded")
+        s.displayLayouts = ["external-display": .flowRight, "builtin-display": .centered]
+        let layouts = try JSONDecoder().decode(ClockSettings.self, from: JSONEncoder().encode(s))
+        check(layouts.displayLayouts?["external-display"] == .flowRight && layouts.displayLayouts?["builtin-display"] == .centered,
+              "each display keeps its own layout")
+        for size in [CGSize(width: 1920, height: 1080), CGSize(width: 1080, height: 1920), CGSize(width: 5120, height: 1440)] {
+            for scale in [0.45, 0.82, 0.94] {
+                let placement = DialPlacement(size: size, scale: scale, layout: .flowRight)
+                check(placement.center.x + placement.diameter / 2 <= size.width && placement.center.x - placement.diameter / 2 >= 0,
+                      "companion dial stays within display bounds")
+                check(placement.center.y + placement.diameter / 2 <= size.height && placement.center.y - placement.diameter / 2 >= 0,
+                      "companion dial stays vertically bounded")
+            }
+        }
         let testDomain = "com.dedfurby.StillClock.tests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: testDomain)!
         defer { defaults.removePersistentDomain(forName: testDomain) }
@@ -78,6 +95,14 @@ import AppKit
         let first = renderer.image(size: CGSize(width: 400, height: 400), date: moment, settings: s)?.representation(using: .png, properties: [:])
         let second = renderer.image(size: CGSize(width: 400, height: 400), date: moment.addingTimeInterval(5), settings: s)?.representation(using: .png, properties: [:])
         check(first != second, "hands advance while the dial is cached")
+        s.movement = .quartz
+        func companion(_ offset: Double, reduced: Bool) -> Data? {
+            renderer.image(size: CGSize(width: 640, height: 360), date: moment.addingTimeInterval(offset),
+                           settings: s, layout: .flowRight, reducedMotion: reduced)?.representation(using: .png, properties: [:])
+        }
+        let flow = companion(0, reduced: false)
+        check(flow != nil && flow != companion(0.4, reduced: false), "flow animates between quartz ticks")
+        check(companion(0, reduced: true) == companion(0.4, reduced: true), "reduced motion freezes the companion animation")
         print("PASS: \(count) checks — clock math, movement, DST, settings persistence/recovery, drift, all palettes and animated rendering")
     }
 }

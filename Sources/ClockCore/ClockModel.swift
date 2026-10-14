@@ -35,6 +35,12 @@ public enum AppearanceMode: String, CaseIterable, Codable, Identifiable {
     public var title: String { rawValue.capitalized }
 }
 
+public enum DisplayLayout: String, CaseIterable, Codable, Identifiable {
+    case centered, flowRight
+    public var id: String { rawValue }
+    public var title: String { self == .centered ? "Centered clock" : "Right clock · Flow" }
+}
+
 public struct ClockSettings: Codable, Equatable {
     public var dial: Dial = .parchment
     public var movement: Movement = .sweep
@@ -45,6 +51,8 @@ public struct ClockSettings: Codable, Equatable {
     public var showDate: Bool = false
     public var drift: Bool = true
     public var timeZoneID: String = "system"
+    // Optional so settings saved by 1.0.0 continue to decode without resetting the dial.
+    public var displayLayouts: [String: DisplayLayout]?
     public init() {}
     public var timeZone: TimeZone { TimeZone(identifier: timeZoneID) ?? .autoupdatingCurrent }
     public mutating func validate() {

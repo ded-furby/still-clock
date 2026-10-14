@@ -48,7 +48,8 @@ public struct DialPalette {
 
     public func draw(in context: CGContext, size: CGSize, date: Date = Date(),
                      settings: ClockSettings, backingScale: CGFloat = 2,
-                     systemDark: Bool = false, allowDrift: Bool = false) {
+                     systemDark: Bool = false, allowDrift: Bool = false,
+                     layout: DisplayLayout = .centered, reducedMotion: Bool = false) {
         guard size.width > 0, size.height > 0 else { return }
         let night = settings.isNight(systemDark: systemDark)
         let p = DialPalette.make(settings.dial, night: night)
@@ -63,10 +64,14 @@ public struct DialPalette {
             context.drawLinearGradient(gradient, start: CGPoint(x: 0, y: size.height),
                                        end: CGPoint(x: size.width, y: 0), options: [])
         }
-        let d = min(size.width, size.height) * settings.scale
+        let placement = DialPlacement(size: size, scale: settings.scale, layout: layout)
+        let d = placement.diameter
+        if layout == .flowRight && size.width >= size.height * 1.2 {
+            flow(in: context, size: size, placement: placement, date: date, palette: p, reducedMotion: reducedMotion)
+        }
         let drift = allowDrift && settings.drift ? ClockGeometry.drift(at: date.timeIntervalSince1970,
                                                                        amplitude: min(size.width, size.height) * 0.012) : (x: 0.0, y: 0.0)
-        context.translateBy(x: size.width / 2 + drift.x, y: size.height / 2 + drift.y)
+        context.translateBy(x: placement.center.x + drift.x, y: placement.center.y + drift.y)
         context.scaleBy(x: d / 1000, y: d / 1000)
         let pixels = min(3072, max(256, Int((d * backingScale).rounded(.up))))
         let key = "\(pixels)-\(settings.dial.rawValue)-\(night)-\(settings.showNumerals)"
@@ -107,6 +112,54 @@ public struct DialPalette {
         context.setFillColor(p.second.cgColor)
         context.fillEllipse(in: CGRect(x: -3, y: -3, width: 6, height: 6))
         context.restoreGState()
+    }
+
+    private func flow(in c: CGContext, size: CGSize, placement: DialPlacement,
+                      date: Date, palette p: DialPalette, reducedMotion: Bool) {
+        c.saveGState()
+        let start = size.width * 0.075
+        let end = placement.center.x - placement.diameter * 0.56
+        let span = end - start
+        let time = reducedMotion ? 0 : date.timeIntervalSince1970
+        let phase = time * .pi / 9
+        func point(_ t: CGFloat, lane: CGFloat = 0) -> CGPoint {
+            let envelope = pow(sin(t * .pi), 1.5)
+            return CGPoint(x: start + span * t,
+                           y: size.height * 0.5 + sin(t * .pi * 2 - phase + lane * 0.4) * size.height * 0.075 * envelope + lane * size.height * 0.012 * envelope)
+        }
+        c.setLineCap(.round)
+        for lane in [-1.0, 0, 1.0] {
+            c.beginPath()
+            for step in 0...100 {
+                let pt = point(CGFloat(step) / 100, lane: lane)
+                if step == 0 { c.move(to: pt) } else { c.addLine(to: pt) }
+            }
+            c.setStrokeColor((lane == 0 ? p.second : p.subtle).withAlphaComponent(lane == 0 ? 0.30 : 0.16).cgColor)
+            c.setLineWidth(max(0.65, size.height / 1150)); c.strokePath()
+        }
+        // A bead of light travels toward the clock, with a fading tail and seamless reset.
+        let progress = reducedMotion ? 0.58 : (time / 18).truncatingRemainder(dividingBy: 1)
+        let fade = min(1, min(progress, 1 - progress) * 10)
+        for step in 0..<24 {
+            let t = progress - Double(step) * 0.003
+            guard t >= 0 else { continue }
+            let pt = point(t)
+            let radius = size.height * (step == 0 ? 0.004 : 0.0015)
+            c.setFillColor(p.second.withAlphaComponent(fade * (1 - Double(step) / 24) * 0.9).cgColor)
+            c.fillEllipse(in: CGRect(x: pt.x - radius, y: pt.y - radius, width: radius * 2, height: radius * 2))
+        }
+        let tip = point(1)
+        c.setLineWidth(max(0.8, size.height / 1100))
+        c.setStrokeColor(p.second.withAlphaComponent(0.5).cgColor)
+        c.move(to: CGPoint(x: tip.x - size.height * 0.008, y: tip.y + size.height * 0.008))
+        c.addLine(to: tip)
+        c.addLine(to: CGPoint(x: tip.x - size.height * 0.008, y: tip.y - size.height * 0.008)); c.strokePath()
+        let labelX = start + span * 0.42
+        text("S T I L L", at: CGPoint(x: labelX, y: size.height * 0.69), size: size.height * 0.018,
+             color: p.ink.withAlphaComponent(0.75), context: c, tracking: 2)
+        text("A LITTLE LESS HURRY", at: CGPoint(x: labelX, y: size.height * 0.28), size: size.height * 0.009,
+             color: p.subtle, context: c, tracking: 1.7)
+        c.restoreGState()
     }
 
     private func makeDial(pixels: Int, palette p: DialPalette, night: Bool, numerals: Bool) -> CGImage? {
@@ -188,11 +241,12 @@ public struct DialPalette {
         NSGraphicsContext.restoreGraphicsState()
     }
 
-    public func image(size: CGSize, date: Date, settings: ClockSettings) -> NSBitmapImageRep? {
+    public func image(size: CGSize, date: Date, settings: ClockSettings,
+                      layout: DisplayLayout = .centered, reducedMotion: Bool = false) -> NSBitmapImageRep? {
         guard let c = CGContext(data: nil, width: Int(size.width), height: Int(size.height), bitsPerComponent: 8,
                                 bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
                                 bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
-        draw(in: c, size: size, date: date, settings: settings, backingScale: 1)
+        draw(in: c, size: size, date: date, settings: settings, backingScale: 1, layout: layout, reducedMotion: reducedMotion)
         guard let image = c.makeImage() else { return nil }
         return NSBitmapImageRep(cgImage: image)
     }

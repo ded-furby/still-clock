@@ -6,13 +6,15 @@ Recorded 15 October 2026. Runtime checks used an Apple Silicon iMac on macOS 27.
 
 - Native app and screen saver compile for arm64 and x86_64; combined universal binaries are inspected during packaging.
 - Ad-hoc signatures pass `codesign --verify --deep --strict` for the app and `--strict` for the screen saver.
-- The dependency-free check runner passes 1,490 checks covering clock math, movement quantization, timezone/DST, invalid/corrupt settings, persistence, drift and rasterization checks.
+- The dependency-free check runner passes 1,512 checks covering clock math, movement quantization, timezone/DST, invalid/corrupt settings, persistence, drift and rasterization checks, old-settings migration, independent display layouts, layout bounds, continuous flow and reduced-motion rendering.
 - The actual screen saver bundle loads in the native smoke test, exports its principal class, creates its options sheet, draws in preview/full-size modes, and starts/stops its animation lifecycle.
 - macOS System Settings recognizes Still Clock, renders its preview, and opens the native Options sheet. Day and night rendering were inspected there.
 - The screen saver’s Options sheet successfully writes the shared visual-settings file from the real macOS host.
 - With the Lenovo display selected in System Settings, Still Clock is the selected custom screen saver with a five-minute idle start.
 - The installed settings app detects both the built-in Retina display and Lenovo R27qe Gen2. The wallpaper controller creates a separate frame-aligned window for each display.
 - The actual system screen saver was started from the installed app. The user confirmed that the moving clock appeared on both the iMac and Lenovo displays.
+- After correcting the desktop window level and hiding behavior, the user separately confirmed the live wallpaper was visible on both desktops with the screen saver off.
+- The right-aligned companion composition was rendered and visually inspected at 1920 × 1080.
 - Immediate password protection was verified in Lock Screen settings and with `sysadminctl -screenLock status` after the user authenticated the change directly in macOS.
 - Launch at login was enabled and read back as enabled in the installed app. A reboot was not performed.
 - The installed app and screen saver executables match the packaged build by SHA-256, and their ad-hoc signatures pass strict verification.
@@ -20,7 +22,7 @@ Recorded 15 October 2026. Runtime checks used an Apple Silicon iMac on macOS 27.
 
 ## CI
 
-The [GitHub Actions macOS build](https://github.com/ded-furby/still-clock/actions/runs/38652242065) for code commit `afe9dd04855e78bea266dc126ccff93659ee2b04` passed universal compilation, the native checks and bundle smoke test, the XCTest suite, and DMG/ZIP packaging. The release also includes the subsequent documentation update recording the live two-display acceptance check.
+The [1.0.0 GitHub Actions macOS build](https://github.com/ded-furby/still-clock/actions/runs/38652242065) passed universal compilation, the native checks and bundle smoke test, the XCTest suite, and DMG/ZIP packaging. See the repository's Actions tab for the commit-specific 1.0.1 result; the local checks above include its wallpaper and companion-layout changes.
 
 ## Limits and remaining manual checks
 

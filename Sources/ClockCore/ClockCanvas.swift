@@ -4,6 +4,7 @@ import SwiftUI
 @MainActor public final class ClockCanvas: NSView {
     public var settings = ClockSettings() { didSet { if oldValue != settings { restartTimer(); needsDisplay = true } } }
     public var allowDrift = false
+    public var layout: DisplayLayout = .centered { didSet { if oldValue != layout { restartTimer(); needsDisplay = true } } }
     public var externalAnimation = false
     public var paused = false { didSet { restartTimer() } }
     public var fixedDate: Date?
@@ -26,7 +27,7 @@ import SwiftUI
         stop()
         guard window != nil, !paused, !externalAnimation, fixedDate == nil else { return }
         let reduced = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-        let interval = !settings.showSeconds ? 1 : reduced ? 1 : settings.movement.frameInterval
+        let interval = reduced ? 1 : layout == .flowRight ? 1.0 / 30 : !settings.showSeconds ? 1 : settings.movement.frameInterval
         let timer = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
             guard let self else { return }
             if self.window?.occlusionState.contains(.visible) == true { self.needsDisplay = true }
@@ -39,7 +40,8 @@ import SwiftUI
         guard let context = NSGraphicsContext.current?.cgContext else { return }
         let dark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
         renderer.draw(in: context, size: bounds.size, date: fixedDate ?? Date(), settings: settings,
-                      backingScale: window?.backingScaleFactor ?? 2, systemDark: dark, allowDrift: allowDrift)
+                      backingScale: window?.backingScaleFactor ?? 2, systemDark: dark, allowDrift: allowDrift,
+                      layout: layout, reducedMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion)
     }
     public override func accessibilityValue() -> Any? {
         let formatter = DateFormatter()

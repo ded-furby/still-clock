@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-VERSION="${VERSION:-1.0.0}"
+VERSION="${VERSION:-1.0.1}"
 NAME="StillClock-${VERSION}-universal"
 test -d "build/Still Clock.app"
 test -d "build/Still Clock.saver"

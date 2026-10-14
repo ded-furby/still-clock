@@ -9,6 +9,7 @@ import ClockCore
 @MainActor final class AppController: NSObject, NSApplicationDelegate, ObservableObject, NSWindowDelegate {
     @Published var selectedPage = 0
     @Published var displayNames: [String] = []
+    @Published var displays: [ClockDisplay] = []
     @Published var wallpaperEnabled = false
     @Published var launchAtLogin = false
     @Published var message = ""
@@ -32,26 +33,33 @@ import ClockCore
         saverInstalled = FileManager.default.fileExists(atPath: saverURL.path)
         setupMenu()
         displayNames = NSScreen.screens.map(\.localizedName)
+        displays = NSScreen.screens.map { ClockDisplay(screen: $0) }
         store.$settings.sink { [weak self] value in
-            for window in self?.wallpaperWindows ?? [] { (window.contentView as? ClockCanvas)?.settings = value }
-            for window in self?.previewWindows ?? [] { (window.contentView as? ClockCanvas)?.settings = value }
+            for window in (self?.wallpaperWindows ?? []) + (self?.previewWindows ?? []) {
+                (window.contentView as? ClockCanvas)?.settings = value
+                (window.contentView as? ClockCanvas)?.layout = value.layout(for: window.screen)
+            }
         }.store(in: &subscriptions)
         let workspace = NSWorkspace.shared.notificationCenter
         observers.append(workspace.addObserver(forName: NSWorkspace.screensDidSleepNotification, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.displayAwake = false; self?.updatePause() }
         })
         observers.append(workspace.addObserver(forName: NSWorkspace.screensDidWakeNotification, object: nil, queue: .main) { [weak self] _ in
-            Task { @MainActor in self?.displayAwake = true; self?.updatePause() }
+            Task { @MainActor in self?.displayAwake = true; self?.restoreWallpaper() }
         })
         observers.append(workspace.addObserver(forName: NSWorkspace.sessionDidResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.sessionActive = false; self?.updatePause() }
         })
         observers.append(workspace.addObserver(forName: NSWorkspace.sessionDidBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
-            Task { @MainActor in self?.sessionActive = true; self?.updatePause() }
+            Task { @MainActor in self?.sessionActive = true; self?.restoreWallpaper() }
+        })
+        observers.append(workspace.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.restoreWallpaper() }
         })
         observers.append(NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in
                 self?.displayNames = NSScreen.screens.map(\.localizedName)
+                self?.displays = NSScreen.screens.map { ClockDisplay(screen: $0) }
                 if self?.wallpaperEnabled == true { self?.rebuildWallpaper() }
             }
         })
@@ -77,7 +85,11 @@ import ClockCore
                 if let data = renderer.image(size: CGSize(width: 1920, height: 1200), date: date, settings: s)?.representation(using: .png, properties: [:]) {
                     try data.write(to: directory.appendingPathComponent("night.png"))
                 }
-                print("Rendered 9 clock previews to \(directory.path)")
+                s.appearance = .day; s.dial = .lavender
+                if let data = renderer.image(size: CGSize(width: 1920, height: 1080), date: date, settings: s, layout: .flowRight)?.representation(using: .png, properties: [:]) {
+                    try data.write(to: directory.appendingPathComponent("companion.png"))
+                }
+                print("Rendered 10 clock previews to \(directory.path)")
             } catch { fputs("Render failed: \(error)\n", stderr); exit(1) }
             NSApp.terminate(nil); return true
         }
@@ -124,7 +136,11 @@ import ClockCore
     }
 
     func windowWillClose(_ notification: Notification) {
-        if notification.object as? NSWindow === settingsWindow { NSApp.setActivationPolicy(.accessory) }
+        if notification.object as? NSWindow === settingsWindow {
+            NSApp.setActivationPolicy(.accessory)
+            // Changing activation policy can reorder the app's other windows.
+            DispatchQueue.main.async { [weak self] in self?.restoreWallpaper() }
+        }
     }
     func applicationDidBecomeActive(_ notification: Notification) { store.reload() }
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { showSettings(); return true }
@@ -147,12 +163,23 @@ import ClockCore
             window.isReleasedWhenClosed = false
             window.title = "Still Wallpaper — \(screen.localizedName)"
             window.setFrame(screen.frame, display: false)
-            window.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopWindow)) + 1)
+            // Stay above the system's desktop picture, just below Finder's icons.
+            // A level near desktopWindow can be covered by WallpaperAgent.
+            window.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopIconWindow)) - 1)
             window.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
+            window.canHide = false; window.hidesOnDeactivate = false
             window.ignoresMouseEvents = true; window.hasShadow = false
             let canvas = ClockCanvas(frame: NSRect(origin: .zero, size: screen.frame.size))
-            canvas.settings = store.settings; canvas.allowDrift = true
+            canvas.settings = store.settings; canvas.layout = store.settings.layout(for: screen); canvas.allowDrift = true
             window.contentView = canvas; window.orderFrontRegardless(); wallpaperWindows.append(window)
+        }
+        updatePause()
+    }
+    private func restoreWallpaper() {
+        guard wallpaperEnabled else { return }
+        for window in wallpaperWindows {
+            window.orderFrontRegardless()
+            window.contentView?.needsDisplay = true
         }
         updatePause()
     }
@@ -166,7 +193,7 @@ import ClockCore
             let window = NSWindow(contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false, screen: screen)
             window.isReleasedWhenClosed = false; window.setFrame(screen.frame, display: false); window.level = .floating; window.hasShadow = false
             let canvas = ClockCanvas(frame: NSRect(origin: .zero, size: screen.frame.size))
-            canvas.settings = store.settings; canvas.allowDrift = true
+            canvas.settings = store.settings; canvas.layout = store.settings.layout(for: screen); canvas.allowDrift = true
             window.contentView = canvas; window.makeKeyAndOrderFront(nil); previewWindows.append(window)
         }
         NSApp.activate(ignoringOtherApps: true)

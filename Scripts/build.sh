@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-VERSION="${VERSION:-1.0.0}"
+VERSION="${VERSION:-1.0.1}"
 OUT="${BUILD_DIR:-$PWD/build}"
 APP="$OUT/Still Clock.app"
 SAVER="$OUT/Still Clock.saver"
