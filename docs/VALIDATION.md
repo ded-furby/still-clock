@@ -16,6 +16,7 @@ Recorded 15 October 2026. Runtime checks used an Apple Silicon iMac on macOS 27.
 - After correcting the desktop window level and hiding behavior, the user separately confirmed the live wallpaper was visible on both desktops with the screen saver off.
 - The right-aligned companion composition was rendered and visually inspected at 1920 × 1080.
 - In the installed 1.0.1 app, the Lenovo setting was changed to **Right clock · Flow** and read back; the built-in display remained **Centered clock**.
+- After that layout trial, both displays were returned to **Centered clock** at the user's request. Sweep movement and the second hand remain enabled in the shared app/saver settings.
 - Immediate password protection was verified in Lock Screen settings and with `sysadminctl -screenLock status` after the user authenticated the change directly in macOS.
 - Launch at login was enabled and read back as enabled in the installed app. A reboot was not performed.
 - The installed app and screen saver executables match the packaged build by SHA-256, and their ad-hoc signatures pass strict verification.
@@ -35,3 +36,5 @@ The [1.0.1 GitHub Actions macOS build](https://github.com/ded-furby/still-clock/
 - No OLED burn-in or battery-life guarantee is made.
 
 For reproduction, run `make universal`, `make test`, then follow `SETUP.md`. Check the actual system screen saver, not only the app’s preview.
+
+The repository and release are public. Anonymous HTTP requests to the repository and 1.0.1 DMG both returned 200, and the DMG download size matched the uploaded release asset.
